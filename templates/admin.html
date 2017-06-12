@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html lang="en">
+<head>
+	<title>English Literacy Test</title>
+	<!-- Latest compiled and minified CSS -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+
+	<!-- Optional theme -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.15/css/jquery.dataTables.min.css">
+	<!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+	<!-- Latest compiled and minified JavaScript -->
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
+</head>
+<body style='padding: 0px; background: #eee' class="container-fluid">
+	<nav class="navbar navbar-inverse navbar-default" style="margin-bottom: 0px">
+	  <div class="container-fluid">
+	    <div class="navbar-header">
+	      <a class="navbar-brand" href="#">
+	        Admin Dashboard
+	      </a>
+	    </div>
+	    <p class="navbar-text navbar-right">{{session["email"]}} (<a href="/logout" class="navbar-link">logout</a>)</p>
+	  </div>
+	</nav>
+	<div class="container-fluid">
+		<div class="row">
+			<div class="col-md-7 col-sm-12" style="background: white">
+				<br><h3 class="text-center">My Tests</h3>
+				<hr>
+				<div id="container">
+					<div style="padding-left: 5% ; padding-right: 5%" class="row">
+						<table id="usertable" class="display text-center" >
+							  <thead>
+							  	<tr>
+							    	<th>Name of Test</th>
+							    	<th>Created Time</th>
+							  	</tr>
+							  </thead>
+						</table>
+					</div>
+				</div><br>
+			</div>
+			<div class="col-md-5 col-sm-12 panel" style="background: #eee; padding-left: 3%; padding-right: 3%">
+				<br><h3>Create Test</h3>
+				<hr style="border-top: 1px solid black">
+				<form method="post" action="/create">
+				  <div class="form-group">
+				    <label for="name">Name of the Test</label>
+				    <input type="text" class="form-control" id="name" name="name" placeholder="Enter a Unique Name">
+				  </div>
+				  <div class="form-group">
+				    <label for="jsonfile">Question Paper</label>
+				    <input type="file" id="jsonfile">
+				    <p class="help-block">Please include a valid JSON file.</p>
+				  </div>
+				  {% if session["message"] %}
+				  <div class="alert alert-success">
+			  		<strong>{{session["message"]}}</strong>
+				  </div>
+				  {% endif %}
+				  <button type="submit" class="btn btn-primary">Create Test</button>
+				</form>
+				<br>
+			</div>
+		</div>
+	</div>
+<script type="text/javascript">
+	// $.ajax("{{ url_for('loadtests') }}").done(function (reply) {
+	// 	$('#container').html(reply["tests"]);
+	// 	reply = $.parseJSON(reply)
+	// 	$("#container").html(reply["tests"])
+	// 	// JSON.parse(reply, function(data){
+	// 	// 	$('#container').html(data);
+	// 	// })
+ //   	});
+   	$(document).ready(function() {
+	    $('#usertable').DataTable( {
+	        "ajax": "{{ url_for('loadtests') }}"
+	    });
+	});
+</script>
+</body>
+</html>

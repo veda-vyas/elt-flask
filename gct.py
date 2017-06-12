@@ -10,6 +10,7 @@ from random import shuffle
 import cgi
 
 app = Flask(__name__, static_url_path='')
+app.secret_key = "some_secret"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:veda1997@localhost/GCT'
 db = SQLAlchemy(app)
 
@@ -29,6 +30,34 @@ class User(db.Model):
         self.name = name
         self.pin = pin
         self.emailid = emailid
+
+class AdminDetails(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    email = db.Column(db.String(180), unique=True)
+    password = db.Column(db.String(1000))
+
+    def __init__(self, email, password):
+        self.email = email
+        self.password = password
+
+    def __repr__(self):
+        return str(self.password)
+
+class Tests(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(180), unique=True)
+    # json = db.Column(db.String(1000))
+    creator = db.Column(db.String(180))
+    time = db.Column(db.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __init__(self, name, creator):
+        self.name = name
+        self.creator = creator
+        self.time = datetime.utcnow
+        # self.json = json
+
+    def __repr__(self):
+        return str(self.name+"::"+str(self.time))
 
 class UserAudio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -551,3 +580,65 @@ def endtest():
 @app.route('/startquiz')
 def startquiz():
     return render_template('quiz.html')
+
+def valid_admin_login(email, password):
+    result = AdminDetails.query.filter_by(email=email).first()
+    if str(result) == str(password):
+        return True
+    return False
+
+@app.route('/adminlogin', methods=['GET', 'POST'])
+def adminlogin():
+    message = None
+    error = None
+    if request.method == "POST":
+        email = request.form['email']
+        password = request.form['password']
+        if valid_admin_login(email,password):
+            session['email'] = email
+            message = "You are logged in as %s" % email
+            return redirect(url_for('admin'))
+        else:
+            error = "Invalid Credentials"
+            return render_template('login.html', error=error)
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('email', None)
+    return redirect(url_for('adminlogin'))
+
+@app.route('/admin')
+def admin():
+    if 'email' in session:
+        return render_template('admin.html')    
+    return redirect(url_for('adminlogin'))
+
+def valid_test(name):
+    result = Tests.query.filter_by(name=name).first()
+    return result
+
+@app.route('/create', methods=["POST"])
+def create():
+    name = request.form['name']
+    message = None
+    if valid_test(name) is None:
+        test = Tests(name,session["email"])
+        db.session.add(test)
+        db.session.commit()
+        message = "Last Upload ("+name+") was Success."
+    else:
+        message = name+" already Exists." 
+    session["message"] = message
+    return redirect(url_for("admin"))
+
+@app.route('/loadtests', methods=["GET"])
+def loadtests():
+    creator = session["email"]
+    result = Tests.query.filter_by(creator=creator).all()
+    final = {}
+    final["data"] = []
+    for test in result:
+        test = str(test).split("::")
+        final["data"].append(test)
+    return json.dumps(final)
