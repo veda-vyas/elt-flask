@@ -1,6 +1,11 @@
 from flask import Flask, flash, redirect, render_template, \
-     request, url_for, session, send_from_directory
+     request, jsonify, url_for, session, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
+from cerberus import Validator
+from sqlalchemy import cast
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import JSON
+from functools import wraps
 from datetime import datetime
 import time
 import json
@@ -8,16 +13,155 @@ import os
 from settings import APP_STATIC_JSON
 from random import shuffle
 import cgi
+from werkzeug.utils import secure_filename
+from flask import json as fJson
 
 app = Flask(__name__, static_url_path='')
+app.config['UPLOAD_FOLDER'] = APP_STATIC_JSON
+
 app.secret_key = "some_secret"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:veda1997@localhost/GCT'
 db = SQLAlchemy(app)
+
+ALLOWED_EXTENSIONS = set(['json'])
+QP_TEMPLATE_SCHEMA = {
+    'name': {'type': 'string', 'required': True},
+    'section': {
+        'type': 'list', 'minlength': 1, 'required': True,
+        'schema': {
+            'type': 'dict', 
+            'schema': {
+                'name': {'type': 'string', 'required': True}, 
+                'subsection': {
+                    'type': 'list', 'minlength': 1, 'required': True,
+                    'schema': {
+                        'type': 'dict', 
+                        'schema': {
+                            'name': {'type': 'string', 'required': True},
+                            'count': {'type': 'string', 'required': True},
+                            'questions': {'type': 'list', 'maxlength': 0, 'required': True},
+                            'note': {'type': 'string', 'required': True},
+                            'types': {'type': 'string', 'required': True, 'allowed': ['video', 'record', 'passage', 'essay']},
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+RECORD_TYPE_SCHEMA = {
+    'name': {'type': 'string', 'required': True},
+    'questions': {
+        'type': 'list', 'minlength': 1, 'required': True,
+        'schema': {
+            'type': 'dict', 
+            'schema': {
+                'question': {'type': 'string', 'required': True}, 
+                'options': {'type': 'list', 'maxlength': 0, 'required': True},
+                'id': {'type': 'string', 'required': True},
+            }
+        }
+    },
+    'note': {'type': 'string', 'required': True},
+    'types': {'type': 'string', 'required': True, 'allowed': ['record']},
+}
+
+ESSAY_TYPE_SCHEMA = {
+    'name': {'type': 'string', 'required': True},
+    'questions': {
+        'type': 'list', 'minlength': 1, 'required': True,
+        'schema': {
+            'type': 'dict', 
+            'schema': {
+                'question': {'type': 'string', 'required': True}, 
+                'options': {'type': 'list', 'maxlength': 0, 'required': True},
+                'id': {'type': 'string', 'required': True},
+            }
+        }
+    },
+    'note': {'type': 'string', 'required': True},
+    'types': {'type': 'string', 'required': True, 'allowed': ['essay']},
+}
+
+PASSAGE_TYPE_SCHEMA = {
+    'name': {'type': 'string', 'required': True},
+    'types': {'type': 'string', 'required': True, 'allowed': ['passage']},
+    'passageArray': {
+        'type': 'list', 'minlength': 1, 'required': True,
+        'schema': {
+            'type': 'dict', 
+            'schema': {
+                'note': {'type': 'string', 'required': True},
+                'passage': {'type': 'string', 'required': True},
+                'questions': {
+                    'type': 'list', 'minlength': 1, 'required': True,
+                    'schema': {
+                        'type': 'dict', 
+                        'question': {'type': 'string', 'required': True},
+                        'options': {'type': 'list', 'minlength': 4, 'required': True},
+                        'id': {'type': 'string', 'required': True},
+                        'answer': {'type': 'string', 'required': True},
+                        'practicelinks': {'type': 'list', 'minlength': 0, 'required': True},
+                    }
+                }
+            }
+        }
+    }
+}
+
+VIDEO_TYPE_SCHEMA = {
+    'name': {'type': 'string', 'required': True},
+    'types': {'type': 'string', 'required': True, 'allowed': ['passage']},
+    'note': {'type': 'string', 'required': True},
+    'videoArray': {
+        'type': 'list', 'minlength': 1, 'required': True,
+        'schema': {
+            'type': 'dict', 
+            'schema': {
+                'link': {'type': 'string', 'required': True},
+                'questions': {
+                    'type': 'list', 'minlength': 1, 'required': True,
+                    'schema': {
+                        'type': 'dict', 
+                        'question': {'type': 'string', 'required': True},
+                        'options': {'type': 'list', 'minlength': 4, 'required': True},
+                        'id': {'type': 'string', 'required': True},
+                        'answer': {'type': 'string', 'required': True},
+                        'practicelinks': {'type': 'list', 'minlength': 0, 'required': True},
+                    }
+                }
+            }
+        }
+    }
+}
+
+validate_qp_template = Validator(QP_TEMPLATE_SCHEMA)
+validate_passage_template = True
+validate_video_template = True
+validate_essay_template = Validator(ESSAY_TYPE_SCHEMA)
+validate_record_template = Validator(RECORD_TYPE_SCHEMA)
+
+schema_type_mapping = {
+    'essay' :validate_essay_template,
+    'record' :validate_record_template,
+    'passage' :validate_record_template,
+    'video' :validate_record_template,
+}
 
 e1_start=801;e1_end=809;e2_start=1201;e2_end=1208;e3_start=1601;e3_end=1701;
 e4_start=1701;e4_end=1702;
 global status
 global errortype
+
+def to_pretty_json(value):
+    return json.dumps(value, sort_keys=True, indent=4, separators=(',', ': '))
+
+app.jinja_env.filters['tojson_pretty'] = to_pretty_json
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -43,6 +187,20 @@ class AdminDetails(db.Model):
     def __repr__(self):
         return str(self.password)
 
+class Students(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(80))
+    emailid = db.Column(db.String(180), unique=True)
+    rollno = db.Column(db.String(80))
+
+    def __init__(self, name, emailid, rollno):
+        self.name = name
+        self.emailid = emailid
+        self.rollno = rollno
+
+    def __repr__(self):
+        return str(self.name)+"::"+str(self.emailid)+"::"+str(self.rollno)
+
 class Tests(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(180), unique=True)
@@ -53,11 +211,11 @@ class Tests(db.Model):
     def __init__(self, name, creator):
         self.name = name
         self.creator = creator
-        self.time = datetime.utcnow
+        self.time = datetime.utcnow()
         # self.json = json
 
     def __repr__(self):
-        return str(self.name+"::"+str(self.time))
+        return str(self.name)+"::"+str(self.time)
 
 class UserAudio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -589,13 +747,16 @@ def valid_admin_login(email, password):
 
 @app.route('/adminlogin', methods=['GET', 'POST'])
 def adminlogin():
+    row = AdminDetails("vy@fju.us","veda1997")
+    db.session.add(row)
+    db.session.commit()
     message = None
     error = None
     if request.method == "POST":
         email = request.form['email']
         password = request.form['password']
         if valid_admin_login(email,password):
-            session['email'] = email
+            session['adminemail'] = email
             message = "You are logged in as %s" % email
             return redirect(url_for('admin'))
         else:
@@ -605,40 +766,100 @@ def adminlogin():
 
 @app.route('/logout')
 def logout():
-    session.pop('email', None)
+    session.pop('adminemail', None)
     return redirect(url_for('adminlogin'))
 
 @app.route('/admin')
 def admin():
-    if 'email' in session:
+    if 'adminemail' in session:
         return render_template('admin.html')    
     return redirect(url_for('adminlogin'))
 
-def valid_test(name):
+def valid_test(name,files):
+    nameValid = False
+    jsonValid = False
+    messages = []
     result = Tests.query.filter_by(name=name).first()
-    return result
+    if result == None:
+        nameValid = True
+        JSONcount = 0
+        for file in files:
+            if file and file.filename != '' and allowed_file(file.filename):
+                temp_dict = {}
+                temp_dict["name"] = file.filename
+                file.seek(0)
+                data = fJson.load(file)
+                if file.filename == "QP_template.json":
+                    if not validate_qp_template.validate(data):
+                        temp_dict["messages"] = validate_qp_template.errors
+                    else:
+                        temp_dict["messages"] = "QP_template.json is Valid."
+                        jsonValid = True
+                        JSONcount += 1
+                else:
+                    if schema_type_mapping[data["types"]].validate(data):
+                        temp_dict["messages"] = data["name"]+" is Valid."
+                        jsonValid = True
+                        JSONcount += 1
+                    else:
+                        temp_dict["messages"] = schema_type_mapping[data["types"]].errors
+                messages.append(temp_dict)
+            else:
+                messages.append('Invalid Filename or Extension.')
+                jsonValid = False
+    return {"name": nameValid, "json": jsonValid, "messages": messages}
 
-@app.route('/create', methods=["POST"])
+@app.route('/create', methods=["GET","POST"])
 def create():
-    name = request.form['name']
-    message = None
-    if valid_test(name) is None:
-        test = Tests(name,session["email"])
-        db.session.add(test)
-        db.session.commit()
-        message = "Last Upload ("+name+") was Success."
+    if 'adminemail' in session:
+        if request.method == "GET":
+            return render_template("create.html")
+        else:
+            name = request.form['name']
+            files = request.files.getlist("files")
+            json = []
+            validity_report = valid_test(name,files)
+            if validity_report["name"] and validity_report["json"]:
+                for file in files:
+                    filename = secure_filename(file.filename)
+                    path = os.path.join(app.config['UPLOAD_FOLDER'], name+"/")
+                    if not os.path.exists(path):
+                        os.makedirs(path)
+                    file.save(os.path.join(path, filename))
+                email = session["adminemail"]
+                test = Tests(name, email)
+                db.session.add(test)
+                db.session.commit()
+            session["message"] = validity_report
+            return redirect(url_for("create"))
     else:
-        message = name+" already Exists." 
-    session["message"] = message
-    return redirect(url_for("admin"))
+        return redirect(url_for('adminlogin'))
 
 @app.route('/loadtests', methods=["GET"])
 def loadtests():
-    creator = session["email"]
-    result = Tests.query.filter_by(creator=creator).all()
-    final = {}
-    final["data"] = []
-    for test in result:
-        test = str(test).split("::")
-        final["data"].append(test)
-    return json.dumps(final)
+    if 'adminemail' in session:
+        creator = session["adminemail"]
+        result = Tests.query.filter_by(creator=creator).all()
+        final = {}
+        final["data"] = []
+        for test in result:
+            test = str(test).split("::")
+            final["data"].append(test)
+        return json.dumps(final)
+    else:
+        return redirect(url_for('adminlogin'))
+
+# @app.route('/jsonupload', methods=['POST'])
+# def jsonupload():
+#     if 'file' not in request.files:
+#         flash('No file part')
+#         return redirect(request.url)
+#     files = request.files.getlist('file')
+#     for file in files:
+#         if file.filename == '':
+#             flash('Invalid Filename or Extension.')
+#             return redirect(request.url)
+#         if file and allowed_file(file.filename):
+#             filename = secure_filename(file.filename)
+#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+#     return redirect(url_for('jsonupload', filename=filename))

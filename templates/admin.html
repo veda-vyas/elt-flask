@@ -16,23 +16,39 @@
 	<script type="text/javascript" src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
 </head>
 <body style='padding: 0px; background: #eee' class="container-fluid">
-	<nav class="navbar navbar-inverse navbar-default" style="margin-bottom: 0px">
+	<nav class="navbar navbar-inverse" style="margin-bottom: 0px">
 	  <div class="container-fluid">
 	    <div class="navbar-header">
-	      <a class="navbar-brand" href="#">
-	        Admin Dashboard
-	      </a>
+	      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+	        <span class="sr-only">Toggle navigation</span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </button>
+	      <a class="navbar-brand" href="#">Admin Dashboard</a>
 	    </div>
-	    <p class="navbar-text navbar-right">{{session["email"]}} (<a href="/logout" class="navbar-link">logout</a>)</p>
-	  </div>
+
+	    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	      <ul class="nav navbar-nav navbar-right">
+	        <li><a href="/create">Create Test</a></li>
+	        <li class="dropdown">	
+	          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">{{session["email"]}} <span class="caret"></span></a>
+	          <ul class="dropdown-menu">
+	            <li role="separator" class="divider"></li>
+	            <li><a href="/logout">Logout</a></li>
+	          </ul>
+	        </li>
+	      </ul>
+	    </div><!-- /.navbar-collapse -->
+	  </div><!-- /.container-fluid -->
 	</nav>
 	<div class="container-fluid">
 		<div class="row">
-			<div class="col-md-7 col-sm-12" style="background: white">
-				<br><h3 class="text-center">My Tests</h3>
+			<div class="col-sm-12" style="background: white">
+				<br><h2 class="text-center">My Tests</h2>
 				<hr>
-				<div id="container">
-					<div style="padding-left: 5% ; padding-right: 5%" class="row">
+				<div id="container" style="padding-left: 5% ; padding-right: 5%">
+					<div class="row">
 						<table id="usertable" class="display text-center" >
 							  <thead>
 							  	<tr>
@@ -44,39 +60,9 @@
 					</div>
 				</div><br>
 			</div>
-			<div class="col-md-5 col-sm-12 panel" style="background: #eee; padding-left: 3%; padding-right: 3%">
-				<br><h3>Create Test</h3>
-				<hr style="border-top: 1px solid black">
-				<form method="post" action="/create">
-				  <div class="form-group">
-				    <label for="name">Name of the Test</label>
-				    <input type="text" class="form-control" id="name" name="name" placeholder="Enter a Unique Name">
-				  </div>
-				  <div class="form-group">
-				    <label for="jsonfile">Question Paper</label>
-				    <input type="file" id="jsonfile">
-				    <p class="help-block">Please include a valid JSON file.</p>
-				  </div>
-				  {% if session["message"] %}
-				  <div class="alert alert-success">
-			  		<strong>{{session["message"]}}</strong>
-				  </div>
-				  {% endif %}
-				  <button type="submit" class="btn btn-primary">Create Test</button>
-				</form>
-				<br>
-			</div>
 		</div>
 	</div>
 <script type="text/javascript">
-	// $.ajax("{{ url_for('loadtests') }}").done(function (reply) {
-	// 	$('#container').html(reply["tests"]);
-	// 	reply = $.parseJSON(reply)
-	// 	$("#container").html(reply["tests"])
-	// 	// JSON.parse(reply, function(data){
-	// 	// 	$('#container').html(data);
-	// 	// })
- //   	});
    	$(document).ready(function() {
 	    $('#usertable').DataTable( {
 	        "ajax": "{{ url_for('loadtests') }}"
