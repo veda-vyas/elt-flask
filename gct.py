@@ -15,6 +15,7 @@ from random import shuffle
 import cgi
 from werkzeug.utils import secure_filename
 from flask import json as fJson
+import logging
 
 app = Flask(__name__, static_url_path='')
 app.config['UPLOAD_FOLDER'] = APP_STATIC_JSON
@@ -22,6 +23,17 @@ app.config['UPLOAD_FOLDER'] = APP_STATIC_JSON
 app.secret_key = "some_secret"
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:veda1997@localhost/GCT'
 db = SQLAlchemy(app)
+
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+def setup_logger(name, log_file, level=logging.DEBUG):
+    handler = logging.FileHandler(log_file)        
+    handler.setFormatter(formatter)
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+    return logger
+
+login_log = setup_logger('login_logger', 'logs/login.log')
 
 ALLOWED_EXTENSIONS = set(['json'])
 QP_TEMPLATE_SCHEMA = {
@@ -177,8 +189,8 @@ class User(db.Model):
 
 class AdminDetails(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    email = db.Column(db.String(180), unique=True)
-    password = db.Column(db.String(1000))
+    email = db.Column(db.String(180), unique=True, default="vy@fju.us")
+    password = db.Column(db.String(1000), default="veda1997")
 
     def __init__(self, email, password):
         self.email = email
@@ -203,7 +215,7 @@ class Students(db.Model):
 
 class Tests(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(180), unique=True)
+    name = db.Column(db.String(80), unique=True)
     # json = db.Column(db.String(1000))
     creator = db.Column(db.String(180))
     time = db.Column(db.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -215,7 +227,19 @@ class Tests(db.Model):
         # self.json = json
 
     def __repr__(self):
-        return str(self.name)+"::"+str(self.time)
+        return str(self.name)+"::"+str(self.time.strftime('%d - %m - %y'))
+
+class StudentTests(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    emailid = db.Column(db.String(180), unique=True)
+    testslist = db.Column(ARRAY(db.String(80)))
+
+    def __init__(self, emailid, testslist):
+        self.emailid = emailid
+        self.testslist = testslist
+
+    def getTests(self):
+        return self.testslist
 
 class UserAudio(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -739,6 +763,8 @@ def endtest():
 def startquiz():
     return render_template('quiz.html')
 
+
+#==================================================== ADMIN PAGE =====================================================
 def valid_admin_login(email, password):
     result = AdminDetails.query.filter_by(email=email).first()
     if str(result) == str(password):
@@ -747,25 +773,40 @@ def valid_admin_login(email, password):
 
 @app.route('/adminlogin', methods=['GET', 'POST'])
 def adminlogin():
-    row = AdminDetails("vy@fju.us","veda1997")
-    db.session.add(row)
-    db.session.commit()
+    ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
+    
+    if db.session.query(AdminDetails).first() is None:
+        row = AdminDetails("vy@fju.us","veda1997")
+        db.session.add(row)
+        db.session.commit()
+
+        login_log.debug("Created Default Admin Credentials.")
+    
     message = None
     error = None
+    
     if request.method == "POST":
         email = request.form['email']
         password = request.form['password']
+        
         if valid_admin_login(email,password):
             session['adminemail'] = email
             message = "You are logged in as %s" % email
+            
+            login_log.debug("Logged in as %s with IP %s" % (email, ip_address))
             return redirect(url_for('admin'))
         else:
             error = "Invalid Credentials"
+            
+            login_log.debug("Tried to login in as %s from IP %s, but Invalid Credentials." % (email, ip_address))
             return render_template('login.html', error=error)
+    
     return render_template('login.html')
 
 @app.route('/logout')
 def logout():
+    login_log.debug("%s logged out with IP %s." % (session["adminemail"], ip_address))
+    
     session.pop('adminemail', None)
     return redirect(url_for('adminlogin'))
 
@@ -775,39 +816,40 @@ def admin():
         return render_template('admin.html')    
     return redirect(url_for('adminlogin'))
 
-def valid_test(name,files):
-    nameValid = False
-    jsonValid = False
-    messages = []
+def checkStudentTests(emailid):
+    return StudentTests.query.filter(StudentTests.emailid == emailid).first()
+
+def validate_name(name):
     result = Tests.query.filter_by(name=name).first()
-    if result == None:
-        nameValid = True
-        JSONcount = 0
-        for file in files:
-            if file and file.filename != '' and allowed_file(file.filename):
-                temp_dict = {}
-                temp_dict["name"] = file.filename
-                file.seek(0)
-                data = fJson.load(file)
-                if file.filename == "QP_template.json":
-                    if not validate_qp_template.validate(data):
-                        temp_dict["messages"] = validate_qp_template.errors
-                    else:
-                        temp_dict["messages"] = "QP_template.json is Valid."
-                        jsonValid = True
-                        JSONcount += 1
-                else:
-                    if schema_type_mapping[data["types"]].validate(data):
-                        temp_dict["messages"] = data["name"]+" is Valid."
-                        jsonValid = True
-                        JSONcount += 1
-                    else:
-                        temp_dict["messages"] = schema_type_mapping[data["types"]].errors
-                messages.append(temp_dict)
+    return result == None
+
+def validate_file(file_name,data):
+    file_report = {}
+    file_report["name"] = file_name
+    if file_name != '' and allowed_file(file_name):
+        if file_name == "QP_template.json":
+            if not validate_qp_template.validate(data):
+                file_report["isValid"] = validate_qp_template.errors
             else:
-                messages.append('Invalid Filename or Extension.')
-                jsonValid = False
-    return {"name": nameValid, "json": jsonValid, "messages": messages}
+                file_report["isValid"] = True
+        else:
+            if schema_type_mapping[data["types"]].validate(data):
+                file_report["isValid"] = True
+            else:
+                file_report["isValid"] = schema_type_mapping[data["types"]].errors
+    else:
+        file_report["isValid"] = 'Invalid Filename or Extension.'
+    return file_report
+
+def save_file(folder_name,file_name,data):
+    filename = secure_filename(file_name)
+    path = os.path.join(app.config['UPLOAD_FOLDER'], folder_name+"/")
+    if not os.path.exists(path):
+        os.makedirs(path)
+    with open(os.path.join(path, filename), "w+") as f:
+        fJson.dump(data, f)
+    # file.save(os.path.join(path, filename))
+    # file.close()
 
 @app.route('/create', methods=["GET","POST"])
 def create():
@@ -815,22 +857,25 @@ def create():
         if request.method == "GET":
             return render_template("create.html")
         else:
-            name = request.form['name']
+            test_name = request.form['name']
+            nameValid = validate_name(test_name)
+
             files = request.files.getlist("files")
-            json = []
-            validity_report = valid_test(name,files)
-            if validity_report["name"] and validity_report["json"]:
-                for file in files:
-                    filename = secure_filename(file.filename)
-                    path = os.path.join(app.config['UPLOAD_FOLDER'], name+"/")
-                    if not os.path.exists(path):
-                        os.makedirs(path)
-                    file.save(os.path.join(path, filename))
-                email = session["adminemail"]
-                test = Tests(name, email)
+            files_report = []
+            for file in files:
+                file.seek(0)
+                data = fJson.load(file)
+                file_report = validate_file(file.filename, data)
+                if file_report["isValid"]:
+                    save_file(test_name, file.filename, data)
+                    files_report.append(file_report)
+
+            if nameValid and len(files_report)==len(files):
+                test = Tests(test_name, session["adminemail"])
                 db.session.add(test)
                 db.session.commit()
-            session["message"] = validity_report
+
+            session["message"] = {"Valid Name":nameValid, "files_report":files_report}
             return redirect(url_for("create"))
     else:
         return redirect(url_for('adminlogin'))
@@ -849,17 +894,9 @@ def loadtests():
     else:
         return redirect(url_for('adminlogin'))
 
-# @app.route('/jsonupload', methods=['POST'])
-# def jsonupload():
-#     if 'file' not in request.files:
-#         flash('No file part')
-#         return redirect(request.url)
-#     files = request.files.getlist('file')
-#     for file in files:
-#         if file.filename == '':
-#             flash('Invalid Filename or Extension.')
-#             return redirect(request.url)
-#         if file and allowed_file(file.filename):
-#             filename = secure_filename(file.filename)
-#             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-#     return redirect(url_for('jsonupload', filename=filename))
+@app.route('/autocomplete', methods=['GET'])
+def autocomplete():
+    search = request.args.get('q')
+    query = db.session.query(Students.emailid).filter(Students.emailid.like('%' + str(search) + '%'))
+    results = [mv[0] for mv in query.all()]
+    return jsonify(matching_results=results)

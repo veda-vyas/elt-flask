@@ -15,7 +15,7 @@
 	<!-- Latest compiled and minified JavaScript -->
 	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
 	<script type="text/javascript" src="https://cdn.datatables.net/1.10.15/js/jquery.dataTables.min.js"></script>
-	<script src="javascripts/bootstrap-select.js"></script>
+	<script src="//code.jquery.com/ui/1.10.2/jquery-ui.js" ></script>
 </head>
 <body style='padding: 0px; background: #eee' class="container-fluid">
 	<nav class="navbar navbar-inverse" style="margin-bottom: 0px">
@@ -55,8 +55,7 @@
 				    <input type="text" class="form-control" id="name" name="name" placeholder="Enter a Unique Name">
 				  </div>
 				  <div class="form-group">
-				    <label for="jsonfile">Question Paper (<a href="#" id="qinfo">Format</a>)</label>
-				    <input type="file" name="files" multiple="multiple" accept=".json">
+				    <label for="jsonfile">Question Paper (<a href="#" id="qinfo">hide</a>)</label>
 				    <p class="help-block">
 					    <ul id="help-block" style="background: antiquewhite; padding-top: 10px; padding-bottom: 10px; border-radius: 5px">
 					    	<li>One Template json and atleast one Section json are must.</li>
@@ -67,23 +66,11 @@
 					    	<li>Please include valid JSON files.</li>
 					    </ul> 
 				    </p>
+				    <input type="file" name="files" multiple="multiple" accept=".json">
 				  </div>
 				  <div class="form-group">
 					<label for="studentslist">Add Students</label><br>
-					<select class="selectpicker form-control" id="studentslist" title="Search by Name, Email, Roll. No." name="studentslist" data-live-search="true" multiple>
-					  <option>Mustard</option>
-					  <option>Ketchup</option>
-					  <option>Relish</option>
-					  <option>Mustard</option>
-					  <option>Ketchup</option>
-					  <option>Relish</option>
-					  <option>Mustard</option>
-					  <option>Ketchup</option>
-					  <option>Relish</option>
-					  <option>Mustard</option>
-					  <option>Ketchup</option>
-					  <option>Relish</option>
-					</select>
+					<textarea id="studentslist" size="50" name="studentslist" class="form-control"></textarea>
 				  </div>
 				  <button type="submit" class="btn btn-primary">Create Test</button>
 				</form>
@@ -120,9 +107,49 @@
 	</div>
 </body>
 <script type="text/javascript">
-	$("#help-block").hide();
+	
 	$( "#qinfo" ).click(function() {
 	  $( "#help-block" ).slideToggle( "slow" );
 	});
+
+	// code for auto-suggesting student email id's
+	$( function() {
+	    function split( val ) {
+	      return val.split( /,\s*/ );
+	    }
+	    function extractLast( term ) {
+	      return split( term ).pop();
+	    }
+	 
+	    $( "#studentslist" )
+	      .on( "keydown", function( event ) {
+	        if ( event.keyCode === $.ui.keyCode.TAB &&
+	            $( this ).autocomplete( "instance" ).menu.active ) {
+	          event.preventDefault();
+	        }
+	      })
+	      .autocomplete({
+	        minLength: 0,
+	        source: function( request, response ) {
+	          $.getJSON("{{url_for('autocomplete')}}",{
+	            q: extractLast(request.term),
+	          }, function(data) {
+	            response($.ui.autocomplete.filter(data.matching_results, extractLast( request.term )));
+	          });
+	        },
+	        focus: function() {
+	          return false;
+	        },
+	        select: function( event, ui ) {
+	          var terms = split( this.value );
+	          terms.pop();
+	          if ( terms.indexOf(ui.item.value) == -1)
+	          	terms.push( ui.item.value );
+	          	terms.push( "" );
+	          	this.value = terms.join( ", " );
+	          return false;
+	        }
+	      });
+	  });
 </script>
 </html>
