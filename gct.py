@@ -763,6 +763,9 @@ def endtest():
 def startquiz():
     return render_template('quiz.html')
 
+@app.route('/registration')
+def registration():
+    return render_template('registration.html')
 
 #==================================================== ADMIN PAGE =====================================================
 def valid_admin_login(email, password):
