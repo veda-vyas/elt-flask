@@ -21,7 +21,7 @@ app = Flask(__name__, static_url_path='')
 app.config['UPLOAD_FOLDER'] = APP_STATIC_JSON
 
 app.secret_key = "some_secret"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:veda1997@localhost/GCT'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:database@localhost/GCT'
 db = SQLAlchemy(app)
 
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -776,7 +776,7 @@ def adminlogin():
     ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
     
     if db.session.query(AdminDetails).first() is None:
-        row = AdminDetails("vy@fju.us","veda1997")
+        row = AdminDetails("admin@quiz.in","admin")
         db.session.add(row)
         db.session.commit()
 
@@ -805,6 +805,7 @@ def adminlogin():
 
 @app.route('/logout')
 def logout():
+    ip_address = request.headers.get('X-Forwarded-For', request.remote_addr)
     login_log.debug("%s logged out with IP %s." % (session["adminemail"], ip_address))
     
     session.pop('adminemail', None)

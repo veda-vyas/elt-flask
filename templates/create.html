@@ -79,7 +79,7 @@
 			<div class="col-md-6 col-sm-12" style="background: white">
 				<br><h3>Result</h3>
 				<hr style="border-top: 1px solid black">
-				<!-- {% if session["message"].name %}
+				{# {% if session["message"].name %}
 				  <div class="alert alert-success">
 			  		<strong>Selected Name is Valid.</strong>
 				  </div>
@@ -97,7 +97,7 @@
 				  		<strong>{{session}}</strong>
 					  </div>
 					{% endfor %}
-				{% endif %} -->
+				{% endif %} #}
 				{% for message in session['message'] %}
 					<h4>{{message}}</h4>
 					<p>{{session['message'][message]}}</p>
