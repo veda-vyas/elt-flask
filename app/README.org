@@ -1,10 +1,7 @@
-#+TITLE: Deployment
-#+AUTHOR: Vedvyas
+#+TITLE: flask-docker
+#+AUTHOR: Veda Vyas
 
-* Setting up =Docker= for Development/Production
-+ Installing =RGUKT-Quiz= Software with a Docker file
-
-* Getting started with =Docker=
+* Setting up =Docker= to view rgukt-quizsoftware
 ** Install =DockerToolbar=
 + This is the [[https://www.docker.com/toolbox][link]].
 
@@ -38,7 +35,7 @@ VBoxManage controlvm default natpf1 "flask_app,tcp,127.0.0.1,8080,,8080"
 + If you are a collaborator of this repo skip forking and clone this repository.
 
 ** Create an account at DockerHub
-+ [[dockerhub.com][DockerHub link]]
++ [[https://hub.docker.com/][DockerHub link]]
 
 ** Create a repository
 + Click the "Create" dropdown in the far top right corner (not the "Create Repository+" button).
@@ -72,4 +69,4 @@ docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/rg
 #+END_SRC
 
 ** Check the app 
-+ Go to localhost:8080 in your browser and you should see your application.
++ Go to [[localhost:8080]] in your browser and you should see your application.
