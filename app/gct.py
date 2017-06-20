@@ -33,7 +33,7 @@ def setup_logger(name, log_file, level=logging.DEBUG):
     logger.addHandler(handler)
     return logger
 
-login_log = setup_logger('login_logger', 'logs/login.log')
+login_log = setup_logger('login_logger', 'app/logs/login.log')
 
 ALLOWED_EXTENSIONS = set(['json'])
 QP_TEMPLATE_SCHEMA = {
@@ -789,9 +789,8 @@ def registration():
 
 @app.route('/setpassword')
 def setpassword():
-    if 'email' in session:
-        
-    return render_template('quiz.html')
+    if 'email' in session: 
+        return render_template('set_password.html')
 #==================================================== ADMIN PAGE =====================================================
 def valid_admin_login(email, password):
     result = AdminDetails.query.filter_by(email=email).first()
