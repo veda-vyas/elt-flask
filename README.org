@@ -1,8 +1,7 @@
-#+TITLE: Deployment
-#+AUTHOR: Vedvyas
+#+TITLE: flask-docker
+#+AUTHOR: Veda Vyas
 
 * Setting up =Docker= for Development/Production
-+ Installing =RGUKT-Quiz= Software with a Docker file
 
 * Getting started with =Docker=
 ** Install =DockerToolbar=
