@@ -787,6 +787,11 @@ def registration():
         email = request.form["email"]
         return render_template('registration.html', message=[message, email])
 
+@app.route('/setpassword')
+def setpassword():
+    if 'email' in session:
+        
+    return render_template('quiz.html')
 #==================================================== ADMIN PAGE =====================================================
 def valid_admin_login(email, password):
     result = AdminDetails.query.filter_by(email=email).first()
