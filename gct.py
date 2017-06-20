@@ -187,6 +187,19 @@ class User(db.Model):
         self.pin = pin
         self.emailid = emailid
 
+class Users(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    emailid = db.Column(db.String(180), unique=True)
+    password = db.Column(db.String(80))
+    verified = db.Column(db.String(80), default=False)
+    registered_time = db.Column(db.DateTime(), default=datetime.utcnow)
+    password_last_time = db.Column(db.DateTime(), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def __init__(self, name, pin, emailid):
+        self.name = name
+        self.pin = pin
+        self.emailid = emailid
+
 class AdminDetails(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(180), unique=True, default="vy@fju.us")
@@ -763,9 +776,16 @@ def endtest():
 def startquiz():
     return render_template('quiz.html')
 
-@app.route('/registration')
+@app.route('/registration', methods=['GET', 'POST'])
 def registration():
-    return render_template('registration.html')
+    if request.method == "GET":
+        return render_template('registration.html')
+    elif request.method == "POST":
+        start_date = datetime.utcnow()
+        end_date = datetime.utcnow()
+        message = "registration success, Check your mail for verification request"
+        email = request.form["email"]
+        return render_template('registration.html', message=[message, email])
 
 #==================================================== ADMIN PAGE =====================================================
 def valid_admin_login(email, password):
