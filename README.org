@@ -72,4 +72,4 @@ docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/rg
 #+END_SRC
 
 ** Check the app 
-+ Go to localhost:8080 in your browser and you should see your application.
++ Go to [[localhost:8080]] in your browser and you should see your application.
