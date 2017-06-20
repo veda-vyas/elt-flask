@@ -35,7 +35,7 @@ VBoxManage controlvm default natpf1 "flask_app,tcp,127.0.0.1,8080,,8080"
 + If you are a collaborator of this repo skip forking and clone this repository.
 
 ** Create an account at DockerHub
-+ [[dockerhub.com][DockerHub link]]
++ [[https://hub.docker.com/][DockerHub link]]
 
 ** Create a repository
 + Click the "Create" dropdown in the far top right corner (not the "Create Repository+" button).
