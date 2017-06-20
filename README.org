@@ -1,9 +1,7 @@
 #+TITLE: flask-docker
 #+AUTHOR: Veda Vyas
 
-* Setting up =Docker= for Development/Production
-
-* Getting started with =Docker=
+* Setting up =Docker= to view rgukt-quizsoftware
 ** Install =DockerToolbar=
 + This is the [[https://www.docker.com/toolbox][link]].
 
