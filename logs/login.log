@@ -19,3 +19,7 @@
 2017-06-20 16:20:48,089 DEBUG Tried to login in as admin@quiz.in from IP 127.0.0.1, but Invalid Credentials.
 2017-06-20 16:22:19,141 DEBUG Created Default Admin Credentials.
 2017-06-20 16:22:24,149 DEBUG Logged in as admin@quiz.in with IP 127.0.0.1
+2017-06-20 17:19:51,450 DEBUG Created Default Admin Credentials.
+2017-06-20 17:19:59,292 DEBUG Logged in as admin@quiz.in with IP 127.0.0.1
+2017-06-20 17:25:27,029 DEBUG admin@quiz.in logged out with IP 127.0.0.1.
+2017-06-20 17:25:51,681 DEBUG Logged in as admin@quiz.in with IP 127.0.0.1

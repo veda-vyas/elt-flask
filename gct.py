@@ -21,7 +21,7 @@ app = Flask(__name__, static_url_path='')
 app.config['UPLOAD_FOLDER'] = APP_STATIC_JSON
 
 app.secret_key = "some_secret"
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:database@localhost/GCT'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:veda1997@localhost/GCT'
 db = SQLAlchemy(app)
 
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
