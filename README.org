@@ -1,7 +1,7 @@
 #+TITLE: flask-docker
 #+AUTHOR: Veda Vyas
 
-* Setting up =Docker= to view rgukt-quizsoftware
+* Setting up =Docker= to view elt-flask
 ** Install =DockerToolbar=
 + This is the [[https://www.docker.com/toolbox][link]].
 
@@ -13,12 +13,12 @@
 
 ** Pull the image using =docker=
 #+BEGIN_SRC
-docker pull vedavyas/rgukt-quizsoftware
+docker pull vedavyas/elt-flask
 #+END_SRC
 
 ** Run the given image in a =container=
 #+BEGIN_SRC
-docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/rgukt-quizsoftware
+docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/elt-flask
 #+END_SRC
 
 ** Setup =virtualbox=
@@ -64,8 +64,8 @@ git push origin master
 
 ** Open =docker= terminal
 #+BEGIN_SRC
-docker pull vedavyas/rgukt-quizsoftware
-docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/rgukt-quizsoftware
+docker pull vedavyas/elt-flask
+docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/elt-flask
 #+END_SRC
 
 ** Check the app 
