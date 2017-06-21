@@ -7,9 +7,6 @@ WORKDIR /app
 # Copy the current directory contents into the container at /app
 ADD . /app
 
-# To create login.log file Testing phase
-RUN touch logs/login.log
-
 # Install any needed packages specified in requirements.txt
 RUN pip install -r requirements.txt
 
