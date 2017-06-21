@@ -18,7 +18,7 @@ docker pull vedavyas/elt-flask
 
 ** Run the given image in a =container=
 #+BEGIN_SRC
-docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/elt-flask
+docker run -p 8080:80 vedavyas/elt-flask
 #+END_SRC
 
 ** Setup =virtualbox=
@@ -65,7 +65,7 @@ git push origin master
 ** Open =docker= terminal
 #+BEGIN_SRC
 docker pull vedavyas/elt-flask
-docker run -p 8080:80 -e ENVIRONMENT='production' -d --name=quiz_app vedavyas/elt-flask
+docker run -p 8080:80 vedavyas/elt-flask
 #+END_SRC
 
 ** Check the app 
